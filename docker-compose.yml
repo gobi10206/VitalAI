@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: vitalai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vitalai_user
+      POSTGRES_PASSWORD: vitalai_secure_password_2026
+      POSTGRES_DB: vitalai_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: vitalai-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://vitalai_user:vitalai_secure_password_2026@db:5432/vitalai_db
+      - JWT_SECRET_KEY=vitalai_production_super_secret_healthcare_key_2026
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: vitalai-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
